@@ -2,7 +2,6 @@ import { Chat, Message, Story } from '../types';
 
 export function generateMockChats(): Chat[] {
   const now = Date.now();
-
   return [
     {
       id: 'chat-1',
@@ -209,7 +208,6 @@ export function generateMockChats(): Chat[] {
 
 export function generateMockMessages(): Record<string, Message[]> {
   const now = Date.now();
-
   return {
     'chat-1': [
       {
@@ -372,12 +370,12 @@ export function generateMockMessages(): Record<string, Message[]> {
         status: 'delivered',
       },
     ],
+    // Добавь больше сообщений для других чатов по желанию
   };
 }
 
 export function generateMockStories(): Record<string, Story[]> {
   const now = Date.now();
-
   return {
     'user-1': [
       {

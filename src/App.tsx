@@ -7,6 +7,7 @@ import { generateMockChats, generateMockMessages, generateMockStories } from './
 
 import LoginScreen from './components/LoginScreen';
 import Sidebar from './components/Sidebar';
+import MobileTabBar from './components/MobileTabBar';
 import ChatList from './components/ChatList';
 import ChatWindow from './components/ChatWindow';
 import Stories from './components/Stories';
@@ -15,6 +16,7 @@ import Settings from './components/Settings';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState('chats');
   const [showStories, setShowStories] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -39,9 +41,7 @@ function App() {
   }, [isAuthenticated, chats.length, dispatch]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      dispatch(cleanupExpiredStories());
-    }, 60000);
+    const interval = setInterval(() => dispatch(cleanupExpiredStories()), 60000);
     return () => clearInterval(interval);
   }, [dispatch]);
 
@@ -50,45 +50,62 @@ function App() {
   }, [theme]);
 
   const handleMenuClick = (menu: string) => {
-    if (menu === 'profile') {
-      setShowProfile(true);
-    } else if (menu === 'settings') {
-      setShowSettings(true);
-    }
+    if (menu === 'profile') setShowProfile(true);
+    if (menu === 'settings') setShowSettings(true);
+    setIsSidebarOpen(false);
   };
 
-  if (!isAuthenticated) {
-    return <LoginScreen />;
-  }
+  if (!isAuthenticated) return <LoginScreen />;
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-[#111111]' : 'bg-gray-50'}`}>
-      <div className="h-screen flex overflow-hidden">
-        {/* Sidebar */}
+    <div className={`h-screen flex flex-col ${theme === 'dark' ? 'bg-[#111111]' : 'bg-gray-50'}`}>
+      <div className="flex-1 flex overflow-hidden">
+        {/* Сайдбар */}
         <Sidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           onMenuClick={handleMenuClick}
         />
 
-        {/* Главная область: ChatList + ChatWindow */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* ChatList — фиксированная ширина, скрывается на мобильных при открытом чате */}
-          <div className={`flex-shrink-0 w-full lg:w-[400px] ${activeChat ? 'hidden lg:flex' : 'flex'} flex-col`}>
-            <ChatList
-              onMenuClick={() => setIsSidebarOpen(true)}
-              onStoryClick={() => setShowStories(true)}
-            />
+        {/* Центральная часть */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Список чатов — максимум 420px на десктопе */}
+          <div className={`flex-shrink-0 w-full lg:max-w-[420px] flex flex-col ${activeChat ? 'hidden lg:flex' : 'flex'}`}>
+            {mobileTab === 'chats' && (
+              <ChatList
+                onMenuClick={() => setIsSidebarOpen(true)}
+                onStoryClick={() => setShowStories(true)}
+              />
+            )}
+            {mobileTab === 'channels' && (
+              <div className="flex-1 flex items-center justify-center text-gray-400 bg-[#111111]">
+                <p className="text-2xl font-medium">Channels</p>
+                <p className="text-sm mt-2">Coming soon...</p>
+              </div>
+            )}
+            {mobileTab === 'groups' && (
+              <div className="flex-1 flex items-center justify-center text-gray-400 bg-[#111111]">
+                <p className="text-2xl font-medium">Groups</p>
+                <p className="text-sm mt-2">Coming soon...</p>
+              </div>
+            )}
+            {mobileTab === 'calls' && (
+              <div className="flex-1 flex items-center justify-center text-gray-400 bg-[#111111]">
+                <p className="text-2xl font-medium">Calls</p>
+                <p className="text-sm mt-2">Coming soon...</p>
+              </div>
+            )}
           </div>
 
-          {/* ChatWindow — занимает ВСЁ оставшееся место */}
-          <div className={`flex-1 ${activeChat ? 'flex' : 'hidden lg:flex'}`}>
-            <ChatWindow
-              onBack={() => dispatch({ type: 'chats/setActiveChat', payload: null })}
-            />
+          {/* ChatWindow — занимает всё оставшееся место */}
+          <div className="flex-1 min-w-0">
+            <ChatWindow onBack={() => dispatch({ type: 'chats/setActiveChat', payload: null })} />
           </div>
         </div>
       </div>
+
+      {/* Таб-бар только если нет активного чата */}
+      {!activeChat && <MobileTabBar activeTab={mobileTab} onTabChange={setMobileTab} />}
 
       {/* Модалки */}
       {showStories && <Stories onClose={() => setShowStories(false)} />}

@@ -86,4 +86,5 @@ export const {
   toggleArchive,
   markAsRead,
 } = chatsSlice.actions;
+
 export default chatsSlice.reducer;
