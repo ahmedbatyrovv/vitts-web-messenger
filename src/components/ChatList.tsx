@@ -88,7 +88,7 @@ export default function ChatList({ onMenuClick, onStoryClick }: ChatListProps) {
         </button>
       )}
 
-      {/* Список чатов — занимает всё оставшееся место */}
+      {/* Chat list */}
       <div className="flex-1 overflow-y-auto">
         {filteredChats.length === 0 ? (
           <div className="h-full flex items-center justify-center text-gray-500">
