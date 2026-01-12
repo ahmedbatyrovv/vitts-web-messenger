@@ -58,17 +58,44 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
     if (step < 6) {
       setStep(step + 1);
     } else {
-      const newUser: User = {
+      // Проверяем уникальность
+      const users = JSON.parse(localStorage.getItem('users') || '[]') as (User & { password: string })[];
+
+      if (users.some(u => u.username === username.trim())) {
+        setFieldErrors({ ...fieldErrors, 3: 'Это имя пользователя уже занято' });
+        return;
+      }
+
+      if (users.some(u => u.phone === phone)) {
+        setFieldErrors({ ...fieldErrors, 1: 'Этот номер телефона уже зарегистрирован' });
+        return;
+      }
+
+      if (users.some(u => u.email === email)) {
+        setFieldErrors({ ...fieldErrors, 2: 'Этот email уже зарегистрирован' });
+        return;
+      }
+
+      // Создаём пользователя
+      const newUser: User & { password: string } = {
         id: 'user-' + Date.now(),
         phone,
         email,
-        username,
+        username: username.trim(),
         name: name.trim(),
         about: 'Привет! Я использую это приложение.',
         lastSeen: Date.now(),
         isOnline: true,
+        password, // ← сохраняем пароль (только для демо!)
       };
-      dispatch(login(newUser));
+
+      // Сохраняем в localStorage
+      const updatedUsers = [...users, newUser];
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+
+      // Автологин
+      const { password: _, ...userWithoutPassword } = newUser;
+      dispatch(login(userWithoutPassword));
     }
   };
 
@@ -92,15 +119,18 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
               value={phone}
               onChange={(e) => {
                 let val = e.target.value;
-                if (!val || val.startsWith('+')) val = '+' + val.slice(1).replace(/\D/g, '');
-                else val = val.replace(/\D/g, '');
+                if (val === '' || val.startsWith('+')) {
+                  val = '+' + val.slice(1).replace(/\D/g, '');
+                } else {
+                  val = val.replace(/\D/g, '');
+                }
                 setPhone(val);
               }}
-              placeholder="+66 123 456 789"
+              placeholder="+1234567890"
               className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors"
               autoFocus
             />
-            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+            {error && <p className="text-red-400 text-xs mt-2 bg-red-950/30 p-2 rounded">{error}</p>}
           </>
         );
 
@@ -116,7 +146,7 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
               className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors"
               autoFocus
             />
-            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+            {error && <p className="text-red-400 text-xs mt-2 bg-red-950/30 p-2 rounded">{error}</p>}
           </>
         );
 
@@ -132,7 +162,7 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
               className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors"
               autoFocus
             />
-            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+            {error && <p className="text-red-400 text-xs mt-2 bg-red-950/30 p-2 rounded">{error}</p>}
           </>
         );
 
@@ -148,7 +178,7 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
               className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors"
               autoFocus
             />
-            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+            {error && <p className="text-red-400 text-xs mt-2 bg-red-950/30 p-2 rounded">{error}</p>}
           </>
         );
 
@@ -162,7 +192,7 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors pr-11"
+                className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] pr-11"
                 autoFocus
               />
               <button
@@ -173,7 +203,7 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+            {error && <p className="text-red-400 text-xs mt-2 bg-red-950/30 p-2 rounded">{error}</p>}
           </>
         );
 
@@ -187,7 +217,7 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors pr-11"
+                className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] pr-11"
                 autoFocus
               />
               <button
@@ -198,7 +228,7 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-            {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+            {error && <p className="text-red-400 text-xs mt-2 bg-red-950/30 p-2 rounded">{error}</p>}
           </>
         );
 
@@ -219,9 +249,7 @@ export default function SignUpScreen({ onSwitchToLogin }: SignUpScreenProps) {
         </div>
 
         <form onSubmit={handleNext} className="space-y-6">
-          <div>
-            {getCurrentField()}
-          </div>
+          <div>{getCurrentField()}</div>
 
           <div className="flex gap-3 mt-8">
             {step > 1 && (

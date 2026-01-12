@@ -9,53 +9,48 @@ interface LoginScreenProps {
 }
 
 export default function LoginScreen({ onSwitchToSignUp }: LoginScreenProps) {
-  const [identifier, setIdentifier] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ identifier?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
 
   const dispatch = useAppDispatch();
 
-  const validatePassword = (pwd: string): string | null => {
-    if (pwd.length < 8) return 'Пароль должен содержать минимум 8 символов';
-    if (!/[A-Z]/.test(pwd)) return 'Пароль должен содержать хотя бы одну заглавную букву';
-    if (!/[a-z]/.test(pwd)) return 'Пароль должен содержать хотя бы одну строчную букву';
-    if (!/[0-9]/.test(pwd)) return 'Пароль должен содержать хотя бы одну цифру';
-    return null;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: { identifier?: string; password?: string } = {};
+    const newErrors: { username?: string; password?: string } = {};
 
-    if (!identifier.trim()) {
-      newErrors.identifier = 'Введите номер телефона или email';
+    if (!username.trim()) {
+      newErrors.username = 'Введите имя пользователя';
     }
 
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      newErrors.password = passwordError;
-    } else if (!password) {
+    if (!password) {
       newErrors.password = 'Введите пароль';
     }
 
     setErrors(newErrors);
 
-    // Если ошибок нет → логин
-    if (Object.keys(newErrors).length === 0) {
-      const isPhone = identifier.startsWith('+');
-      const mockUser: User = {
-        id: 'demo-user-' + Date.now(),
-        phone: isPhone ? identifier : '',
-        email: isPhone ? '' : identifier,
-        username: 'user_' + Math.floor(Math.random() * 10000),
-        name: 'Demo User',
-        about: 'Привет! Я использую это приложение.',
-        lastSeen: Date.now(),
-        isOnline: true,
-      };
-      dispatch(login(mockUser));
+    if (Object.keys(newErrors).length > 0) return;
+
+    // Загружаем всех зарегистрированных пользователей
+    const users = JSON.parse(localStorage.getItem('users') || '[]') as (User & { password: string })[];
+
+    // Ищем по username
+    const foundUser = users.find(u => u.username === username.trim());
+
+    if (!foundUser) {
+      setErrors({ username: 'Пользователь не найден' });
+      return;
     }
+
+    if (foundUser.password !== password) {
+      setErrors({ password: 'Неверный пароль' });
+      return;
+    }
+
+    // Успешный вход — убираем пароль перед сохранением в Redux
+    const { password: _, ...userWithoutPassword } = foundUser;
+    dispatch(login(userWithoutPassword));
   };
 
   return (
@@ -66,47 +61,45 @@ export default function LoginScreen({ onSwitchToSignUp }: LoginScreenProps) {
             <MessageCircle className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-light text-white mb-2">Вход</h1>
-          <p className="text-gray-400 text-sm">С возвращением!</p>
+          <p className="text-gray-400 text-sm">Введите имя пользователя и пароль</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Поле Телефон / Email */}
+          {/* Username */}
           <div>
-            <label className="block text-[#00A884] text-sm mb-2">Телефон или email</label>
+            <label className="block text-[#00A884] text-sm mb-2">Имя пользователя</label>
             <input
               type="text"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="+66 123 456 789 или example@email.com"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="johndoe123"
               className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors"
               autoFocus
             />
-            {errors.identifier && (
+            {errors.username && (
               <p className="text-red-400 text-xs mt-2 bg-red-950/30 p-2 rounded border border-red-800/50">
-                {errors.identifier}
+                {errors.username}
               </p>
             )}
           </div>
 
-          {/* Поле Пароль */}
-          <div>
+          {/* Password */}
+          <div className="relative">
             <label className="block text-[#00A884] text-sm mb-2">Пароль</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors pr-11"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} /> }
-              </button>
-            </div>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full bg-[#1F1F1F] text-white px-4 py-3.5 rounded-lg border border-[#2A2A2A] focus:border-[#00A884] focus:outline-none transition-colors pr-11"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
             {errors.password && (
               <p className="text-red-400 text-xs mt-2 bg-red-950/30 p-2 rounded border border-red-800/50">
                 {errors.password}
@@ -114,7 +107,6 @@ export default function LoginScreen({ onSwitchToSignUp }: LoginScreenProps) {
             )}
           </div>
 
-          {/* Кнопка */}
           <button
             type="submit"
             className="w-full bg-[#00A884] hover:bg-[#00c896] text-white py-3.5 rounded-lg font-medium transition-colors mt-4"
